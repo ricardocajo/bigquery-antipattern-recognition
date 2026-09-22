@@ -21,7 +21,7 @@ import com.google.zetasql.LanguageOptions;
 import com.google.zetasql.Parser;
 import com.google.zetasql.parser.ASTNodes;
 import com.google.zetasql.parser.ParseTreeVisitor;
-import com.google.zetasql.resolvedast.ResolvedNodes;
+import com.google.zetasql.toolkit.AnalyzedStatement;
 import com.google.zetasql.toolkit.ZetaSQLToolkitAnalyzer;
 import com.google.zetasql.toolkit.antipattern.AntiPatternVisitor;
 import com.google.zetasql.toolkit.antipattern.analyzer.visitors.joinorder.JoinOrderVisitor;
@@ -79,10 +79,14 @@ public class AntiPatternHelper {
             setVisitorMetricsMap(parserVisitorList);
         }
 
+        // Parse once and reuse the AST: the visitors only read it, and re-parsing per
+        // visitor costs one round trip to the ZetaSQL local service each time.
+        logger.info("Parsing query with id: " + inputQuery.getQueryId());
+        ASTNodes.ASTScript parsedQuery = Parser.parseScript(inputQuery.getQuery(), this.languageOptions);
+
         for (AntiPatternVisitor visitorThatFoundAntiPattern : parserVisitorList) {
-            logger.info("Parsing query with id: " + inputQuery.getQueryId() +
+            logger.info("Checking query with id: " + inputQuery.getQueryId() +
                     " for anti-pattern: " + visitorThatFoundAntiPattern.getName());
-            ASTNodes.ASTScript parsedQuery = Parser.parseScript( inputQuery.getQuery(), this.languageOptions);
             try{
                 parsedQuery.accept((ParseTreeVisitor) visitorThatFoundAntiPattern);
                 String result = visitorThatFoundAntiPattern.getResult();
@@ -122,8 +126,9 @@ public class AntiPatternHelper {
         try {
             logger.info("Analyzing query with id: " + inputQuery.getQueryId() +
                     " For anti-pattern:" + visitor.getName());
-            Iterator<ResolvedNodes.ResolvedStatement> statementIterator = this.analyzer.analyzeStatements(query, catalog);
-            statementIterator.forEachRemaining(statement -> statement.accept(visitor));
+            Iterator<AnalyzedStatement> statementIterator = this.analyzer.analyzeStatements(query, catalog);
+            statementIterator.forEachRemaining(
+                statement -> statement.getResolvedStatement().ifPresent(resolvedStatement -> resolvedStatement.accept(visitor)));
 
             String result = visitor.getResult();
             if (result.length() > 0) {

@@ -33,7 +33,7 @@ public class IdentifyRegexpContainsVisitor extends ParseTreeVisitor implements A
   private static final String REGEXP_CONTAINS_ANTI_PATTERN_MESSAGE =
       "REGEXP_CONTAINS at line %d. Prefer LIKE when the full power of regex is not needed (e.g. wildcard matching).";
   private static final String REGEXP_CONTAINS_FUN_ID_STR = "regexp_contains";
-  private static final String REGEX_STRING = "['\"]\\.\\*.*\\.\\*['\"]";
+  private static final String REGEX_STRING = "^\\.\\*.*\\.\\*$";
   private ArrayList<String> result = new ArrayList<String>();
   private String query;
 
@@ -55,7 +55,7 @@ public class IdentifyRegexpContainsVisitor extends ParseTreeVisitor implements A
         // search for argument with string
         for (ASTNodes.ASTExpression argument : arguments) {
           if (argument instanceof ASTNodes.ASTStringLiteral) {
-            String stringLiteralArg = ((ASTNodes.ASTStringLiteral) argument).getImage();
+            String stringLiteralArg = ((ASTNodes.ASTStringLiteral) argument).getStringValue();
             Pattern pattern = Pattern.compile(REGEX_STRING);
             Matcher matcher = pattern.matcher(stringLiteralArg);
             if (matcher.find()) {
