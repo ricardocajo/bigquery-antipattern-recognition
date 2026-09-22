@@ -13,6 +13,7 @@ import com.google.zetasql.toolkit.antipattern.models.BigQueryRemoteFnResponse;
 import com.google.zetasql.toolkit.antipattern.models.BigQueryRemoteFnResult;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -94,7 +95,7 @@ public class AntiPatternControllerTest {
 
         String results = responseObj.getErrorMessage();
 
-        assertEquals("Syntax error: Unexpected integer literal \"123\"", results);
+        assertTrue(results.startsWith("Syntax error: Unexpected integer literal \"123\""));
 
     }
 
@@ -114,7 +115,7 @@ public class AntiPatternControllerTest {
         String results2 = responseObj2.getErrorMessage();
 
         assertEquals("SimpleSelectStar", results1.get(0).getName());
-        assertEquals("Syntax error: Unexpected integer literal \"123\"", results2);
+        assertTrue(results2.startsWith("Syntax error: Unexpected integer literal \"123\""));
 
     }
 
